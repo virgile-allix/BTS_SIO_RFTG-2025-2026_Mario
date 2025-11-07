@@ -1,95 +1,10 @@
 @extends('layouts.app')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/mario.css') }}">
+@endsection
+
 @section('content')
-<style>
-    .retro-90s-form {
-        background: #e8e8e8;
-        border: 3px solid #2c3e50;
-        box-shadow: 5px 5px 0px #2c3e50;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-header-form {
-        background: repeating-linear-gradient(
-            90deg,
-            #5e72e4,
-            #5e72e4 20px,
-            #4c63d2 20px,
-            #4c63d2 40px
-        );
-        border-bottom: 3px solid #2c3e50;
-        color: white;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        padding: 20px;
-    }
-
-    .retro-form-control {
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 2px 2px 0px rgba(44, 62, 80, 0.2) !important;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-        background: white;
-    }
-
-    .retro-form-control:focus {
-        background: #e3f2fd !important;
-        border: 2px solid #5e72e4 !important;
-        box-shadow: 3px 3px 0px rgba(94, 114, 228, 0.3) !important;
-    }
-
-    .retro-label {
-        font-weight: bold;
-        text-transform: uppercase;
-        color: #2c3e50;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-    }
-
-    .retro-btn-cancel {
-        background: #95a5a6 !important;
-        color: white !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .retro-btn-save {
-        background: #2ecc71 !important;
-        color: white !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .retro-btn-cancel:hover, .retro-btn-save:hover {
-        transform: translate(-1px, -1px);
-        box-shadow: 4px 4px 0px #2c3e50 !important;
-    }
-
-    .retro-checkbox {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #2c3e50;
-    }
-
-    .retro-search-filter {
-        background: white;
-        border: 2px solid #5e72e4;
-        padding: 8px;
-        margin-bottom: 10px;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-    }
-
-    .retro-search-filter:focus {
-        outline: none;
-        border-color: #2ecc71;
-        box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
-    }
-</style>
 
 <div class="container">
     <div class="row justify-content-center">
@@ -358,6 +273,39 @@
                             </div>
                         </div>
 
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">🎬 Réalisateurs</label>
+                                <input type="text" id="directorSearch" class="form-control mb-2" placeholder="Rechercher un réalisateur...">
+                                <div style="max-height: 200px; overflow-y: auto; border: 2px solid #2c3e50; padding: 10px; background: #ecf0f1;">
+                                    @if(isset($directors) && count($directors) > 0)
+                                        @php
+                                            $currentDirectors = array_map(function($d) {
+                                                return $d['directorId'] ?? $d['id'] ?? null;
+                                            }, $film['directors'] ?? []);
+                                        @endphp
+                                        @foreach($directors as $director)
+                                            <div class="director-item" data-name="{{ strtolower(($director['firstName'] ?? '') . ' ' . ($director['lastName'] ?? '')) }}">
+                                                <input class="form-check-input me-2" type="checkbox"
+                                                       value="{{ $director['directorId'] ?? $director['id'] }}"
+                                                       name="directors[]"
+                                                       id="dir{{ $director['directorId'] ?? $director['id'] }}"
+                                                       {{ in_array($director['directorId'] ?? $director['id'], $currentDirectors) ? 'checked' : '' }}>
+                                                <label class="form-check-label retro-label" for="dir{{ $director['directorId'] ?? $director['id'] }}">
+                                                    {{ $director['firstName'] ?? $director['first_name'] ?? '' }} {{ $director['lastName'] ?? $director['last_name'] ?? '' }}
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <p class="text-muted">Aucun réalisateur disponible</p>
+                                    @endif
+                                </div>
+                                @error('directors')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         <hr style="border: 2px solid #2c3e50;">
 
                         <div class="d-flex justify-content-between">
@@ -374,36 +322,8 @@
         </div>
     </div>
 </div>
+@endsection
 
-<script>
-    // Filtre de recherche pour les catégories
-    document.getElementById('categorySearch').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const items = document.querySelectorAll('.category-item');
-
-        items.forEach(item => {
-            const name = item.getAttribute('data-name');
-            if (name.includes(searchTerm)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-
-    // Filtre de recherche pour les acteurs
-    document.getElementById('actorSearch').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const items = document.querySelectorAll('.actor-item');
-
-        items.forEach(item => {
-            const name = item.getAttribute('data-name');
-            if (name.includes(searchTerm)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-</script>
+@section('scripts')
+<script src="{{ asset('js/film.js') }}"></script>
 @endsection

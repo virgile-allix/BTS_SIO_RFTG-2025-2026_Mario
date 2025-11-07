@@ -1,129 +1,10 @@
 @extends('layouts.app')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/mario.css') }}">
+@endsection
+
 @section('content')
-<style>
-    .retro-90s-show {
-        background: #e8e8e8;
-        border: 3px solid #2c3e50;
-        box-shadow: 5px 5px 0px #2c3e50;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-header-show {
-        background: repeating-linear-gradient(
-            45deg,
-            #5e72e4,
-            #5e72e4 15px,
-            #4c63d2 15px,
-            #4c63d2 30px
-        );
-        border-bottom: 3px solid #2c3e50;
-        color: white;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        padding: 20px;
-    }
-
-    .retro-card {
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 4px 4px 0px rgba(44, 62, 80, 0.2);
-        background: white;
-    }
-
-    .retro-card-header {
-        background: #5e72e4 !important;
-        color: white !important;
-        border-bottom: 2px solid #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-badge-show {
-        border: 2px solid #2c3e50;
-        box-shadow: 2px 2px 0px #2c3e50;
-        font-weight: bold;
-        padding: 8px 15px;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-badge-G {
-        background: #2ecc71 !important;
-        color: white !important;
-    }
-
-    .retro-badge-PG {
-        background: #3498db !important;
-        color: white !important;
-    }
-
-    .retro-badge-PG-13 {
-        background: #f39c12 !important;
-        color: white !important;
-    }
-
-    .retro-badge-R {
-        background: #e74c3c !important;
-        color: white !important;
-    }
-
-    .retro-badge-NC-17 {
-        background: #2c3e50 !important;
-        color: white !important;
-    }
-
-    .retro-info-box {
-        background: #f8f9fa;
-        border: 2px solid #2c3e50;
-        box-shadow: 3px 3px 0px rgba(44, 62, 80, 0.2);
-        padding: 15px;
-        font-weight: bold;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-feature-badge {
-        background: #5e72e4;
-        color: white;
-        border: 2px solid #2c3e50;
-        box-shadow: 2px 2px 0px rgba(44, 62, 80, 0.3);
-        padding: 8px 15px;
-        font-weight: bold;
-        display: inline-block;
-        margin: 5px;
-    }
-
-    .retro-btn-back {
-        background: #95a5a6 !important;
-        color: white !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .retro-btn-edit {
-        background: #ffc107 !important;
-        color: #2c3e50 !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .retro-btn-delete-show {
-        background: #e74c3c !important;
-        color: white !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .retro-btn-back:hover, .retro-btn-edit:hover, .retro-btn-delete-show:hover {
-        transform: translate(-1px, -1px);
-        box-shadow: 4px 4px 0px #2c3e50 !important;
-    }
-</style>
 
 <div class="container-fluid">
     <div class="row justify-content-center">
@@ -189,8 +70,8 @@
                                         </span>
                                     </div>
                                     <div class="mb-3">
-                                        <strong>Langue:</strong><br>
-                                        ID {{ $film['languageId'] ?? 'N/A' }}
+                                        <strong>Langue originale:</strong><br>
+                                        {{ $film['originalLanguageName'] ?? ($film['originalLanguageId'] ? 'ID ' . $film['originalLanguageId'] : 'N/A') }}
                                     </div>
                                     <div>
                                         <strong>Coût de remplacement:</strong><br>
@@ -250,6 +131,69 @@
                         </div>
                     </div>
 
+                    <!-- Catégories et Acteurs -->
+                    <div class="row g-4 mb-4">
+                        <!-- Catégories -->
+                        <div class="col-md-6">
+                            <div class="retro-card">
+                                <div class="retro-card-header p-3">
+                                    📂 Catégories
+                                </div>
+                                <div class="p-3">
+                                    @if(isset($film['categories']) && count($film['categories']) > 0)
+                                        @foreach($film['categories'] as $category)
+                                            <span class="retro-feature-badge" style="background: #3498db;">
+                                                {{ strtoupper($category['name'] ?? 'N/A') }}
+                                            </span>
+                                        @endforeach
+                                    @else
+                                        <p style="font-family: 'Courier New', monospace;">❌ Aucune catégorie</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acteurs -->
+                        <div class="col-md-6">
+                            <div class="retro-card">
+                                <div class="retro-card-header p-3">
+                                    🎭 Acteurs
+                                </div>
+                                <div class="p-3">
+                                    @if(isset($film['actors']) && count($film['actors']) > 0)
+                                        @foreach($film['actors'] as $actor)
+                                            <span class="retro-feature-badge" style="background: #e74c3c;">
+                                                {{ strtoupper(($actor['firstName'] ?? '') . ' ' . ($actor['lastName'] ?? '')) }}
+                                            </span>
+                                        @endforeach
+                                    @else
+                                        <p style="font-family: 'Courier New', monospace;">❌ Aucun acteur</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Réalisateurs -->
+                    @if(isset($film['directors']) && count($film['directors']) > 0)
+                    <div class="row g-4 mb-4">
+                        <div class="col-12">
+                            <div class="retro-card">
+                                <div class="retro-card-header p-3">
+                                    🎬 Réalisateurs
+                                </div>
+                                <div class="p-3">
+                                    @foreach($film['directors'] as $director)
+                                        <span class="retro-feature-badge" style="background: #f39c12;">
+                                            {{ strtoupper(($director['firstName'] ?? '') . ' ' . ($director['lastName'] ?? '')) }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Actions -->
                     <div class="retro-card">
                         <div class="p-4">
@@ -264,7 +208,7 @@
                                     <form action="{{ route('films.destroy', $film['filmId'] ?? $film['id']) }}"
                                           method="POST"
                                           style="display: inline;"
-                                          onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer « {{ $film['title'] ?? 'ce film' }} » ?')">
+                                          onsubmit="event.preventDefault(); confirmDelete('{{ addslashes($film['title'] ?? 'ce film') }}', event);">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="retro-btn-delete-show px-4 py-2">
@@ -284,4 +228,8 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script src="{{ asset('js/film.js') }}"></script>
 @endsection

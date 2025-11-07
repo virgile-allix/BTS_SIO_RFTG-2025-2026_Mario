@@ -1,178 +1,11 @@
 
 @extends('layouts.app')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/mario.css') }}">
+@endsection
+
 @section('content')
-<style>
-    .retro-90s {
-        background: #e8e8e8;
-        border: 3px solid #2c3e50;
-        box-shadow: 5px 5px 0px #2c3e50;
-        font-family: 'Courier New', monospace;
-    }
-
-    .retro-header {
-        background: repeating-linear-gradient(
-            45deg,
-            #5e72e4,
-            #5e72e4 15px,
-            #4c63d2 15px,
-            #4c63d2 30px
-        );
-        border-bottom: 3px solid #2c3e50;
-        color: white;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        padding: 20px;
-    }
-
-    .retro-table {
-        border: 2px solid #2c3e50;
-        background: white;
-    }
-
-    .retro-table thead {
-        background: repeating-linear-gradient(
-            45deg,
-            #5e72e4,
-            #5e72e4 10px,
-            #4c63d2 10px,
-            #4c63d2 20px
-        );
-        border-bottom: 2px solid #2c3e50;
-    }
-
-    .retro-table thead th {
-        color: white;
-        font-weight: bold;
-        text-transform: uppercase;
-        border-right: 1px solid rgba(255,255,255,0.2) !important;
-        padding: 15px 10px;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        font-size: 12px;
-    }
-
-    .retro-table tbody tr {
-        border-bottom: 1px solid #ddd;
-        background: white;
-    }
-
-    .retro-table tbody tr:nth-child(odd) {
-        background: #f8f9fa;
-    }
-
-    .retro-table tbody tr:hover {
-        background: #e3f2fd !important;
-        transform: translateX(2px);
-        box-shadow: 0 2px 8px rgba(94, 114, 228, 0.2);
-    }
-
-    .retro-table tbody td {
-        border-right: 1px solid #eee;
-        padding: 12px 8px;
-        vertical-align: middle;
-    }
-
-    .retro-btn {
-        border: 2px solid #2c3e50 !important;
-        font-weight: bold !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        transition: all 0.2s;
-        padding: 8px 12px !important;
-        min-width: 45px !important;
-        font-size: 14px !important;
-    }
-
-    .retro-btn:hover {
-        transform: translate(-1px, -1px);
-        box-shadow: 4px 4px 0px #2c3e50 !important;
-    }
-
-    .retro-btn:active {
-        transform: translate(1px, 1px);
-        box-shadow: 2px 2px 0px #2c3e50 !important;
-    }
-
-    .retro-btn-view {
-        background: #5e72e4 !important;
-        color: white !important;
-    }
-
-    .retro-btn-edit {
-        background: #ffc107 !important;
-        color: #2c3e50 !important;
-    }
-
-    .retro-btn-delete {
-        background: #e74c3c !important;
-        color: white !important;
-    }
-
-    .retro-btn-add {
-        background: #2ecc71 !important;
-        color: white !important;
-        border: 2px solid #2c3e50 !important;
-        box-shadow: 3px 3px 0px #2c3e50 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        padding: 10px 20px;
-    }
-
-    .retro-badge {
-        border: 2px solid #2c3e50;
-        box-shadow: 2px 2px 0px #2c3e50;
-        font-weight: bold;
-        padding: 5px 10px;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-    }
-
-    .retro-badge-id {
-        background: #5e72e4;
-        color: white;
-    }
-
-    .retro-badge-year {
-        background: #ffc107;
-        color: #2c3e50;
-    }
-
-    .retro-badge-G {
-        background: #2ecc71;
-        color: white;
-    }
-
-    .retro-badge-PG {
-        background: #3498db;
-        color: white;
-    }
-
-    .retro-badge-PG-13 {
-        background: #f39c12;
-        color: white;
-    }
-
-    .retro-badge-R {
-        background: #e74c3c;
-        color: white;
-    }
-
-    .retro-badge-NC-17 {
-        background: #2c3e50;
-        color: white;
-    }
-
-    .retro-title {
-        color: #5e72e4;
-        font-weight: bold;
-        text-decoration: none;
-    }
-
-    .retro-alert {
-        border: 2px solid #2c3e50;
-        box-shadow: 4px 4px 0px rgba(44, 62, 80, 0.2);
-        font-weight: bold;
-    }
-</style>
 
 <div class="container-fluid">
     <div class="row justify-content-center">
@@ -187,7 +20,7 @@
                     </div>
                 </div>
 
-                <div class="p-4" style="background: #fff;">
+                <div class="p-4" style="background: #ffffffff;">
                     @if(session('success'))
                         <div class="alert alert-success retro-alert" role="alert">
                             ✅ {{ session('success') }}
@@ -260,7 +93,7 @@
                                                     <form action="{{ route('films.destroy', $film['filmId'] ?? $film['id']) }}"
                                                           method="POST"
                                                           style="display: inline;"
-                                                          onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer « {{ $film['title'] ?? 'ce film' }} » ?')">
+                                                          onsubmit="event.preventDefault(); confirmDelete('{{ addslashes($film['title'] ?? 'ce film') }}', event);">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit"
@@ -288,4 +121,8 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script src="{{ asset('js/film.js') }}"></script>
 @endsection

@@ -42,11 +42,13 @@ class FilmController extends Controller
         $languages = $this->filmService->getAllLanguages() ?? [];
         $categories = $this->filmService->getAllCategories() ?? [];
         $actors = $this->filmService->getAllActors() ?? [];
+        $directors = $this->filmService->getAllDirectors() ?? [];
 
         return view('films.create', [
             'languages' => $languages,
             'categories' => $categories,
-            'actors' => $actors
+            'actors' => $actors,
+            'directors' => $directors
         ]);
     }
 
@@ -68,7 +70,9 @@ class FilmController extends Controller
             'categories' => 'nullable|array',
             'categories.*' => 'integer',
             'actors' => 'nullable|array',
-            'actors.*' => 'integer'
+            'actors.*' => 'integer',
+            'directors' => 'nullable|array',
+            'directors.*' => 'integer'
         ]);
 
         // Convertir le tableau de specialFeatures en chaîne séparée par des virgules
@@ -76,11 +80,44 @@ class FilmController extends Controller
             $validated['specialFeatures'] = implode(',', $validated['specialFeatures']);
         }
 
+        $categoryIds = $validated['categories'] ?? [];
+        $categoryIds = array_filter($categoryIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['categoryIds'] = array_map('intval', $categoryIds);
+        unset($validated['categories']);
+
+        $actorIds = $validated['actors'] ?? [];
+        $actorIds = array_filter($actorIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['actorIds'] = array_map('intval', $actorIds);
+        unset($validated['actors']);
+
+        $directorIds = $validated['directors'] ?? [];
+        $directorIds = array_filter($directorIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['directorIds'] = array_map('intval', $directorIds);
+        unset($validated['directors']);
+
         $result = $this->filmService->createFilm($validated);
 
         if ($result) {
+            // Si c'est une requête AJAX, retourner du JSON
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Film créé avec succès !',
+                    'film_id' => $result['filmId'] ?? $result['id'] ?? null,
+                    'redirect' => route('films.index')
+                ], 200);
+            }
+
             return redirect()->route('films.index')
                 ->with('success', 'Film créé avec succès !');
+        }
+
+        // Si échec
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création du film.'
+            ], 500);
         }
 
         return back()->withInput()
@@ -98,12 +135,14 @@ class FilmController extends Controller
         $languages = $this->filmService->getAllLanguages() ?? [];
         $categories = $this->filmService->getAllCategories() ?? [];
         $actors = $this->filmService->getAllActors() ?? [];
+        $directors = $this->filmService->getAllDirectors() ?? [];
 
         return view('films.edit', [
             'film' => $film,
             'languages' => $languages,
             'categories' => $categories,
-            'actors' => $actors
+            'actors' => $actors,
+            'directors' => $directors
         ]);
     }
 
@@ -125,7 +164,9 @@ class FilmController extends Controller
             'categories' => 'nullable|array',
             'categories.*' => 'integer',
             'actors' => 'nullable|array',
-            'actors.*' => 'integer'
+            'actors.*' => 'integer',
+            'directors' => 'nullable|array',
+            'directors.*' => 'integer'
         ]);
 
         // Convertir le tableau de specialFeatures en chaîne séparée par des virgules
@@ -133,24 +174,72 @@ class FilmController extends Controller
             $validated['specialFeatures'] = implode(',', $validated['specialFeatures']);
         }
 
+        $categoryIds = $validated['categories'] ?? [];
+        $categoryIds = array_filter($categoryIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['categoryIds'] = array_map('intval', $categoryIds);
+        unset($validated['categories']);
+
+        $actorIds = $validated['actors'] ?? [];
+        $actorIds = array_filter($actorIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['actorIds'] = array_map('intval', $actorIds);
+        unset($validated['actors']);
+
+        $directorIds = $validated['directors'] ?? [];
+        $directorIds = array_filter($directorIds, static fn ($value) => $value !== null && $value !== '');
+        $validated['directorIds'] = array_map('intval', $directorIds);
+        unset($validated['directors']);
+
         $result = $this->filmService->updateFilm($id, $validated);
 
         if ($result) {
+            // Si c'est une requête AJAX, retourner du JSON
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Film modifié avec succès !',
+                    'film_id' => $id,
+                    'redirect' => route('films.show', $id)
+                ], 200);
+            }
+
             return redirect()->route('films.show', $id)
                 ->with('success', 'Film modifié avec succès !');
+        }
+
+        // Si échec
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la modification du film.'
+            ], 500);
         }
 
         return back()->withInput()
             ->with('error', 'Erreur lors de la modification du film.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $result = $this->filmService->deleteFilm($id);
 
         if ($result) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Film supprimé avec succès !',
+                    'redirect' => route('films.index')
+                ], 200);
+            }
+
             return redirect()->route('films.index')
                 ->with('success', 'Film supprimé avec succès !');
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du film.'
+            ], 500);
         }
 
         return back()->with('error', 'Erreur lors de la suppression du film.');
