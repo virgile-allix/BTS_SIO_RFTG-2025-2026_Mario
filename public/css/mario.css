@@ -39,7 +39,7 @@
 }
 
 .retro-table thead th {
-    color: white;
+    color: rgb(0, 0, 0);
     font-weight: bold;
     text-transform: uppercase;
     border-right: 1px solid rgba(255,255,255,0.2) !important;
@@ -543,4 +543,176 @@
 .delete-modal-btn:active {
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px #2c3e50;
+}
+
+/* ================================
+   MODAL OVERLAY - Style rétro 90s
+   ================================ */
+.retro-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+
+.retro-modal {
+    background: #f8f9fa;
+    border: 5px solid #2c3e50;
+    box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+    width: 90%;
+    font-family: 'Courier New', monospace;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.retro-modal-header {
+    background: repeating-linear-gradient(
+        45deg,
+        #5e72e4,
+        #5e72e4 15px,
+        #4c63d2 15px,
+        #4c63d2 30px
+    );
+    border-bottom: 3px solid #2c3e50;
+    padding: 20px;
+    color: white;
+}
+
+.retro-modal-header h4 {
+    margin: 0;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.retro-modal-body {
+    padding: 25px;
+    background: white;
+}
+
+.retro-modal-footer {
+    background: #e8e8e8;
+    border-top: 3px solid #2c3e50;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.retro-btn-secondary {
+    background: #95a5a6;
+    color: white;
+    border: 3px solid #2c3e50;
+    padding: 10px 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #2c3e50;
+    transition: all 0.2s;
+    font-family: 'Courier New', monospace;
+}
+
+.retro-btn-secondary:hover {
+    background: #7f8c8d;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #2c3e50;
+}
+
+.retro-btn-delete {
+    background: #e74c3c;
+    color: white;
+    border: 3px solid #2c3e50;
+    padding: 10px 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #2c3e50;
+    transition: all 0.2s;
+    font-family: 'Courier New', monospace;
+}
+
+.retro-btn-delete:hover:not(:disabled) {
+    background: #c0392b;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #2c3e50;
+}
+
+.retro-btn-delete:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.retro-btn-delete:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #2c3e50;
+}
+
+.retro-form-control {
+    border: 3px solid #2c3e50;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+}
+
+.retro-form-control:focus {
+    outline: none;
+    border-color: #5e72e4;
+    box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(94, 114, 228, 0.2);
+}
+
+/* Alerts dans les modals */
+.retro-modal-body .alert {
+    border: 3px solid #2c3e50;
+    padding: 15px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.2);
+}
+
+.retro-modal-body .alert-danger {
+    background: #fee;
+    color: #c0392b;
+}
+
+.retro-modal-body .alert-warning {
+    background: #fffbea;
+    color: #f39c12;
+}
+
+/* Styles pour le champ de confirmation */
+#deleteConfirmInput, #deleteConfirmation {
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.text-danger {
+    color: #e74c3c !important;
+}
+
+.text-muted {
+    color: #95a5a6 !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
 }

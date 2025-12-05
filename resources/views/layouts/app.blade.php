@@ -44,6 +44,11 @@
                                     Gestion du catalogue de films
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('stocks.*') ? 'active' : '' }}" href="{{ route('stocks.index') }}">
+                                    Gestion des stocks
+                                </a>
+                            </li>
                         @endauth
                     </ul>
 
@@ -92,6 +97,6 @@
     </div>
 
     <!-- Custom Scripts -->
-    @yield('scripts')
+    @stack('scripts')
 </body>
 </html>
