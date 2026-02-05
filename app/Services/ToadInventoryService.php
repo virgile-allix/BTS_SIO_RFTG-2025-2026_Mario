@@ -132,7 +132,7 @@ class ToadInventoryService
 
     public function deleteInventory(int $id): bool
     {
-        $url = $this->baseUrl . '/inventories/' . $id;
+        $inventoryUrl = $this->baseUrl . '/inventories/' . $id;
 
         try {
             $headers = ['Accept' => 'application/json'];
@@ -141,14 +141,15 @@ class ToadInventoryService
                 $headers['Authorization'] = "Bearer {$token}";
             }
 
-            Log::info('Suppression inventory', ['url' => $url]);
+            // Supprimer directement l'inventory - l'API doit gérer la cascade elle-même
+            Log::info('Suppression inventory', ['url' => $inventoryUrl, 'inventory_id' => $id]);
 
             $response = Http::withHeaders($headers)
-                ->timeout(5)
-                ->delete($url);
+                ->timeout(30) // Timeout plus long pour laisser le temps à l'API de gérer la cascade
+                ->delete($inventoryUrl);
 
             if ($response->successful()) {
-                Log::info('Inventory supprimé avec succès', ['status' => $response->status()]);
+                Log::info('Inventory supprimé avec succès', ['status' => $response->status(), 'inventory_id' => $id]);
                 return true;
             }
 
@@ -158,16 +159,26 @@ class ToadInventoryService
 
             Log::warning('Suppression inventory KO', [
                 'status' => $status,
-                'body' => $errorBody
+                'body' => $errorBody,
+                'inventory_id' => $id
             ]);
 
-            // Essayer de parser le message d'erreur
+            // Gérer les différents codes d'erreur
             $errorMessage = 'Erreur lors de la suppression du stock';
-            if ($status === 500 || $status === 400) {
-                // L'API backend a probablement une erreur de contrainte FK
-                if (str_contains($errorBody, 'foreign key') || str_contains($errorBody, 'constraint')) {
-                    $errorMessage = 'Impossible de supprimer : ce DVD a un historique de locations dans la base de données';
+
+            if ($status === 403) {
+                $errorMessage = '🚫 Accès refusé : vous n\'avez pas les droits pour supprimer ce stock';
+            } elseif ($status === 404) {
+                $errorMessage = '❌ Stock introuvable (déjà supprimé ?)';
+            } elseif ($status === 409 || $status === 400) {
+                // L'API backend a probablement une erreur de contrainte ou conflit
+                if (str_contains($errorBody, 'foreign key') || str_contains($errorBody, 'constraint') || str_contains($errorBody, 'rental')) {
+                    $errorMessage = '⚠️ Impossible de supprimer : ce DVD a des locations actives ou un historique';
+                } else {
+                    $errorMessage = '⚠️ Impossible de supprimer : ' . ($errorBody ?: 'conflit détecté');
                 }
+            } elseif ($status === 500) {
+                $errorMessage = '💥 Erreur serveur API lors de la suppression';
             }
 
             throw new \Exception($errorMessage);
@@ -249,6 +260,9 @@ class ToadInventoryService
 
             $activeRentals = $activeResponse->successful() ? $activeResponse->json() : [];
             $allRentals = $allResponse->successful() ? $allResponse->json() : [];
+
+            $activeRentals = $this->filterRentalsByInventoryId($activeRentals, $inventoryId);
+            $allRentals = $this->filterRentalsByInventoryId($allRentals, $inventoryId);
 
             $historicalRentals = array_filter($allRentals, function ($rental) use ($activeRentals) {
                 $rentalId = $rental['rentalId'] ?? null;
@@ -414,5 +428,21 @@ class ToadInventoryService
         $userData = session('toad_user');
         return $userData['token'] ?? null;
     }
-}
 
+    private function filterRentalsByInventoryId($rentals, int $inventoryId): array
+    {
+        if (!is_array($rentals)) {
+            return [];
+        }
+
+        return array_values(array_filter($rentals, function ($rental) use ($inventoryId) {
+            if (!is_array($rental)) {
+                return false;
+            }
+            $rentalInventoryId = $rental['inventoryId']
+                ?? ($rental['inventory']['inventoryId'] ?? null);
+
+            return $rentalInventoryId !== null && (int) $rentalInventoryId === $inventoryId;
+        }));
+    }
+}

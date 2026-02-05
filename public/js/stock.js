@@ -89,7 +89,11 @@ function loadFilmInventories(filmId, detailsBody) {
                 </td>
                 <td class="text-center" id="actions-${invId}">
                     <a href="/stocks/${invId}/edit" class="btn btn-sm retro-btn-edit" title="Modifier" style="margin-right: 5px;">✏️</a>
-                    <button onclick="confirmDeleteStock(${invId}, '${filmTitle.replace(/'/g, "\\'")}', event)" class="btn btn-sm retro-btn-delete-action" title="Supprimer">🗑️</button>
+                    <form id="deleteForm${invId}" action="/stocks/${invId}" method="POST" style="display: inline;">
+                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''}">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="button" onclick="confirmDeleteStock(${invId}, '${filmTitle.replace(/'/g, "\\'")}', event)" class="btn btn-sm retro-btn-delete-action" title="Supprimer">🗑️</button>
+                    </form>
                 </td>
             </tr>
         `;
@@ -209,150 +213,174 @@ function updateDVDStatusUI(inventoryId, isAvailable) {
 
 
 // =============================
-// SUPPRESSION - MODAL CUSTOM (GLOBAL)
+// SUPPRESSION - SIMPLE COMME POUR LES FILMS
 // =============================
 
-window.confirmDeleteStock = async function(inventoryId, filmTitle, event) {
+let pendingDeleteStockForm = null;
+
+window.confirmDeleteStock = function(inventoryId, filmTitle, event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
 
-    // Afficher directement le modal de confirmation (pas de vérification préalable)
-    showDeleteConfirmationModal(inventoryId, filmTitle, 0, null);
-};
+    // Récupérer le formulaire
+    pendingDeleteStockForm = document.getElementById(`deleteForm${inventoryId}`);
 
-// Fonctions showLoadingModal et showBlockedModal supprimées (non utilisées)
-
-function showDeleteConfirmationModal(inventoryId, filmTitle, historicalCount, lastRentalDate) {
-    const warningHTML = historicalCount > 0 ? `
-        <div class="alert alert-warning">
-            ⚠️ Ce DVD a <strong>${historicalCount}</strong> location(s) historique(s).
-            ${lastRentalDate ? `<br>Dernière location: ${new Date(lastRentalDate).toLocaleDateString('fr-FR')}` : ''}
-        </div>
-    ` : '';
-
-    const modalHTML = `
-        <div id="deleteStockModal" class="retro-modal-overlay" style="display: flex;">
-            <div class="retro-modal" style="max-width: 500px;">
-                <div class="retro-modal-header" style="background: #f39c12; color: white;">
-                    <h4>⚠️ CONFIRMATION DE SUPPRESSION</h4>
+    // Créer ou récupérer le modal
+    let overlay = document.getElementById('deleteStockModalOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'deleteStockModalOverlay';
+        overlay.className = 'delete-modal-overlay';
+        overlay.innerHTML = `
+            <div class="delete-modal">
+                <div class="delete-modal-header">
+                    <div class="delete-modal-icon">⚠️</div>
+                    <div class="delete-modal-title">Confirmation de suppression</div>
                 </div>
-                <div class="retro-modal-body">
-                    <p><strong>Film:</strong> ${filmTitle}</p>
-                    <p><strong>Inventory ID:</strong> #${inventoryId}</p>
-                    ${warningHTML}
-                    <p class="text-danger"><strong>⚠️ Cette action est IRRÉVERSIBLE.</strong></p>
-                    <hr>
-                    <label for="deleteConfirmInput" style="font-weight: bold;">
-                        Pour confirmer, tapez <span style="color: #dc3545; font-family: monospace;">DELETE</span> :
-                    </label>
-                    <input type="text" id="deleteConfirmInput" class="form-control retro-form-control mt-2" placeholder="DELETE" autocomplete="off" style="text-transform: uppercase;">
-                    <small id="deleteInputError" class="text-danger" style="display: none;">❌ Vous devez taper "DELETE"</small>
+                <div class="delete-modal-body">
+                    <div class="delete-modal-text">
+                        Êtes-vous sûr de vouloir supprimer ce stock ?
+                    </div>
+                    <div class="delete-modal-film-title" id="deleteStockModalFilmTitle"></div>
+                    <div class="delete-modal-warning">
+                        <span>⚠️</span>
+                        <span>Cette action est irréversible !</span>
+                    </div>
                 </div>
-                <div class="retro-modal-footer">
-                    <button onclick="closeDeleteModal()" class="retro-btn-secondary">❌ Annuler</button>
-                    <button id="confirmDeleteBtn" onclick="handleDeleteStock(${inventoryId}, '${filmTitle.replace(/'/g, "\\'")}', event)" class="retro-btn-delete" disabled>🗑️ Confirmer la suppression</button>
+                <div class="delete-modal-footer">
+                    <button class="delete-modal-btn delete-modal-btn-cancel" id="deleteStockModalCancel">
+                        ❌ Annuler
+                    </button>
+                    <button class="delete-modal-btn delete-modal-btn-confirm" id="deleteStockModalConfirm">
+                        🗑️ Supprimer
+                    </button>
                 </div>
             </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Event listeners
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeDeleteStockModal();
+            }
+        });
+
+        document.getElementById('deleteStockModalCancel').addEventListener('click', closeDeleteStockModal);
+
+        document.getElementById('deleteStockModalConfirm').addEventListener('click', function() {
+            if (pendingDeleteStockForm) {
+                handleDeleteStock(pendingDeleteStockForm);
+                closeDeleteStockModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                closeDeleteStockModal();
+            }
+        });
+    }
+
+    // Mettre à jour le titre et afficher
+    document.getElementById('deleteStockModalFilmTitle').textContent = filmTitle + ' (Inventory #' + inventoryId + ')';
+    overlay.classList.add('active');
+};
+
+function closeDeleteStockModal() {
+    const overlay = document.getElementById('deleteStockModalOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    pendingDeleteStockForm = null;
+}
+
+function handleDeleteStock(form) {
+    showProgressLoader('⏳ Suppression en cours...', 'Veuillez patienter, cela peut prendre quelques secondes...');
+
+    const formData = new FormData(form);
+    const url = form.action;
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Erreur lors de la suppression');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        hideProgressLoader();
+        showToast(data.message || 'Stock supprimé avec succès !', 'success');
+
+        if (data.redirect) {
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1500);
+        } else {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        hideProgressLoader();
+        showToast(error.message || 'Une erreur est survenue lors de la suppression', 'error');
+    });
+}
+
+function showProgressLoader(title, message) {
+    // Supprimer l'ancien loader s'il existe
+    hideProgressLoader();
+
+    const loader = document.createElement('div');
+    loader.id = 'progressLoader';
+    loader.className = 'retro-loader-overlay';
+    loader.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+
+    loader.innerHTML = `
+        <div style="background: white; padding: 40px; border-radius: 10px; border: 4px solid #2c3e50; max-width: 500px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-weight: bold;">${title}</h3>
+            <p style="color: #666; margin-bottom: 25px; font-size: 14px;">${message}</p>
+            <div style="width: 100%; height: 30px; background: #e0e0e0; border-radius: 15px; overflow: hidden; border: 2px solid #2c3e50;">
+                <div class="progress-bar-animation" style="width: 100%; height: 100%; background: linear-gradient(90deg, #5e72e4, #825ee4, #5e72e4); background-size: 200% 100%; animation: progressMove 1.5s ease-in-out infinite;"></div>
+            </div>
+            <p style="color: #999; margin-top: 15px; font-size: 12px;">⚠️ Ne fermez pas cette fenêtre</p>
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    // Ajouter l'animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes progressMove {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    `;
+    document.head.appendChild(style);
 
-    // Validation en temps réel
-    const input = document.getElementById('deleteConfirmInput');
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    const error = document.getElementById('deleteInputError');
-
-    if (input && confirmBtn) {
-        input.addEventListener('input', function() {
-            const value = this.value.toUpperCase();
-            if (value === 'DELETE') {
-                confirmBtn.disabled = false;
-                confirmBtn.style.opacity = '1';
-                error.style.display = 'none';
-            } else {
-                confirmBtn.disabled = true;
-                confirmBtn.style.opacity = '0.5';
-                if (value.length > 0) {
-                    error.style.display = 'block';
-                }
-            }
-        });
-
-        input.focus();
-    }
+    document.body.appendChild(loader);
 }
 
-window.handleDeleteStock = async function(inventoryId, filmTitle, event) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-
-    const input = document.getElementById('deleteConfirmInput');
-    if (input && input.value.toUpperCase() !== 'DELETE') {
-        const error = document.getElementById('deleteInputError');
-        if (error) error.style.display = 'block';
-        return;
-    }
-
-    showLoader();
-    closeDeleteModal();
-
-    try {
-        const response = await fetch(`/stocks/${inventoryId}`, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            }
-        });
-
-        hideLoader();
-
-        const data = await response.json();
-
-        if (data.success) {
-            showToast(data.message || 'Stock supprimé avec succès !', 'success');
-
-            // Supprimer les lignes du tableau (film row + details row)
-            const filmRows = document.querySelectorAll(`tr[data-film-id]`);
-            filmRows.forEach(row => {
-                const filmId = row.getAttribute('data-film-id');
-                const detailsRow = document.getElementById(`details-${filmId}`);
-
-                // Vérifier si ce film contient l'inventory supprimé
-                if (detailsRow) {
-                    const invRow = detailsRow.querySelector(`a[href="/stocks/${inventoryId}/edit"]`);
-                    if (invRow) {
-                        // Retirer la ligne de l'inventory supprimé
-                        const trToRemove = invRow.closest('tr');
-                        if (trToRemove) trToRemove.remove();
-
-                        // Si plus de DVDs, fermer les détails et recharger la page
-                        const remainingDvds = detailsRow.querySelectorAll('tbody tr').length;
-                        if (remainingDvds === 0) {
-                            setTimeout(() => location.reload(), 1000);
-                        }
-                    }
-                }
-            });
-        } else {
-            showToast(data.message || 'Erreur lors de la suppression', 'error');
-        }
-    } catch (error) {
-        hideLoader();
-        console.error('Erreur:', error);
-        showToast('Erreur lors de la suppression', 'error');
-    }
-};
+function hideProgressLoader() {
+    const loader = document.getElementById('progressLoader');
+    if (loader) loader.remove();
+}
 
 window.closeDeleteModal = function() {
-    const modal = document.getElementById('deleteStockModal');
-    if (modal) modal.remove();
+    closeDeleteStockModal();
 };
 
 function showLoader() {

@@ -289,7 +289,18 @@ class StockController extends Controller
 
         $data = [
             'storeId' => $newStoreId,
+            'filmId' => $inventory['filmId'] ?? ($inventory['film']['filmId'] ?? null),
         ];
+
+        if (empty($data['filmId'])) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stock invalide : film manquant',
+                ], 422);
+            }
+            return back()->with('error', 'Stock invalide : film manquant')->withInput();
+        }
 
         Log::info('Modification de stock', ['inventory_id' => $id, 'data' => $data]);
 
@@ -343,6 +354,20 @@ class StockController extends Controller
             return redirect()->route('stocks.index')->with('error', '🚫 Ce stock est actuellement loué');
         }
 
+        $rentals = $this->inventoryService->getRentalsByInventoryId($id);
+        $historicalCount = is_array($rentals['historical'] ?? null) ? count($rentals['historical']) : 0;
+        if ($historicalCount > 0) {
+            $message = 'âš ï¸ Impossible de supprimer : ce stock a un historique de locations';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'blocked' => true,
+                ], 409);
+            }
+            return redirect()->route('stocks.index')->with('error', $message);
+        }
+
         $film = $inventory['film'] ?? [];
         $filmTitle = $film['title'] ?? 'Inconnu';
         $storeId = $inventory['storeId'] ?? null;
@@ -352,11 +377,11 @@ class StockController extends Controller
             'film_id' => $inventory['filmId'] ?? null,
             'film_title' => $filmTitle,
             'store_id' => $storeId,
-            'user_id' => auth()->id(),
+            'user_id' => auth()->user() ? auth()->user()->id : null,
         ]);
 
         try {
-            $success = $this->inventoryService->deleteInventory($id);
+            $this->inventoryService->deleteInventory($id);
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -370,11 +395,21 @@ class StockController extends Controller
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
 
+            // Déterminer le bon code HTTP selon le message d'erreur
+            $httpCode = 500;
+            if (str_contains($errorMessage, 'Accès refusé') || str_contains($errorMessage, 'droits')) {
+                $httpCode = 403;
+            } elseif (str_contains($errorMessage, 'introuvable')) {
+                $httpCode = 404;
+            } elseif (str_contains($errorMessage, 'Impossible de supprimer') || str_contains($errorMessage, 'locations')) {
+                $httpCode = 409;
+            }
+
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage,
-                ], 500);
+                ], $httpCode);
             }
 
             return redirect()->route('stocks.index')->with('error', $errorMessage);
