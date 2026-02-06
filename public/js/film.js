@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Attacher la fonction de validation au formulaire
-    const filmForm = document.querySelector('form[action*="films"]');
+    const filmForm = document.querySelector('#filmForm');
     if (filmForm) {
         filmForm.addEventListener('submit', handleFilmFormSubmit);
 

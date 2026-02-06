@@ -26,7 +26,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('films.store') }}" method="POST">
+                    <form id="filmForm" action="{{ route('films.store') }}" method="POST">
                         @csrf
 
                         <div class="row mb-3">
@@ -311,6 +311,6 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="{{ asset('js/film.js') }}"></script>
-@endsection
+@endpush

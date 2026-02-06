@@ -167,7 +167,7 @@ class ToadFilmService
         }
     }
 
-    public function deleteFilm(int $id): bool
+    public function deleteFilm(int $id): array
     {
         $url = $this->baseUrl . '/films/' . $id;
 
@@ -186,14 +186,20 @@ class ToadFilmService
 
             if ($response->successful()) {
                 Log::info('Film supprimé avec succès', ['status' => $response->status()]);
-                return true;
+                return ['success' => true, 'message' => 'Film supprimé avec succès !'];
             }
 
             Log::warning('Suppression film KO', ['status' => $response->status(), 'body' => $response->body()]);
-            return false;
+
+            $message = 'Erreur lors de la suppression du film.';
+            if ($response->status() === 500 && str_contains($response->body(), 'foreign key constraint')) {
+                $message = 'Impossible de supprimer ce film car il possède encore des stocks en inventaire. Supprimez d\'abord les stocks associés.';
+            }
+
+            return ['success' => false, 'message' => $message];
         } catch (\Throwable $e) {
             Log::error('Erreur suppression film', ['msg' => $e->getMessage()]);
-            return false;
+            return ['success' => false, 'message' => 'Erreur lors de la suppression du film.'];
         }
     }
 

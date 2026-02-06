@@ -123,6 +123,6 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="{{ asset('js/film.js') }}"></script>
-@endsection
+@endpush

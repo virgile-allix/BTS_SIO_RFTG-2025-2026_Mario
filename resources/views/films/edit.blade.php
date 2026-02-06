@@ -26,7 +26,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('films.update', $film['filmId'] ?? $film['id']) }}" method="POST">
+                    <form id="filmForm" action="{{ route('films.update', $film['filmId'] ?? $film['id']) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -324,6 +324,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="{{ asset('js/film.js') }}"></script>
-@endsection
+@endpush
+

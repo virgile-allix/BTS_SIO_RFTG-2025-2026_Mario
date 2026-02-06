@@ -222,26 +222,26 @@ class FilmController extends Controller
     {
         $result = $this->filmService->deleteFilm($id);
 
-        if ($result) {
+        if ($result['success']) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Film supprimé avec succès !',
+                    'message' => $result['message'],
                     'redirect' => route('films.index')
                 ], 200);
             }
 
             return redirect()->route('films.index')
-                ->with('success', 'Film supprimé avec succès !');
+                ->with('success', $result['message']);
         }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la suppression du film.'
+                'message' => $result['message']
             ], 500);
         }
 
-        return back()->with('error', 'Erreur lors de la suppression du film.');
+        return back()->with('error', $result['message']);
     }
 }
